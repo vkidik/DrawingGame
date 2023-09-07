@@ -1,0 +1,25 @@
+@import url("https://fonts.googleapis.com/css?family=Press+Start+2P");
+@import url("../fonts/Press_Start_2P/PressStart2P-Regular.ttf");
+
+:root{
+    --color-body:#2B2C4B;
+    --color-field:#202038;
+    --color-message:#3B3B5F;
+    --color-default: #F72856;
+    --color-placeholder: #63666D;
+    --color-header: #3B3B5F;
+    --color-white: #FFFFFF;
+    --font-size: 16px; 
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
