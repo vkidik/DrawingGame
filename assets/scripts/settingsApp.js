@@ -8,6 +8,7 @@ class settingsApp{
         // buttons
         this.connectBtn = select("#game > div.game > div.form > form.connect > button")
         this.createBtn = select("#game > div.game > div.form > form.create > button")
+        this.cookieBtn = select(".cookie .btn")
         // start Inner function for data input
         createRoom()
         select(".id-room").innerHTML = `ID ROOM: ${sessionStorage.getItem("id-room")}`
@@ -23,6 +24,8 @@ class settingsApp{
             sessionStorage.setItem(this.namePlayerId, this.playerId)
         }
         this.createPlayer(this.namePlayerId)
+
+        serverSend()
     }
     checkInputs(){
         // check input id_room
@@ -83,6 +86,10 @@ class settingsApp{
             let Url = new URL(location.protocol + location.host + location.pathname);
             Url.searchParams.append("id-room", roomId);
             location.href = Url.href;
+        })
+
+        this.cookieBtn.addEventListener("click", ()=>{
+            select(".cookie").remove()
         })
     }
     createPlayer(namePlayerId){

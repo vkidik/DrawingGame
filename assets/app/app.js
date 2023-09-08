@@ -25,7 +25,7 @@ const setClass = (obj, classes) => obj.classList += classes
 const removeClass = (obj, classes) => obj.classList.remove(classes)
 
 // connecting to WebSocket
-const ws = new WebSocket(`ws://localhost:8080`)
+const wsServer = new WebSocket(`ws://localhost:8080`)
 
 // The maximum is inclusive and the minimum is inclusive
 const getRandomIntInclusive = (min, max) => {
@@ -55,19 +55,34 @@ const createRoom = () => {
     const count = "count"
     let roomId = sessionStorage.getItem(nameRoomId);
 
-    if (!roomId) {
-        roomId = getRandomIntInclusive(100000, 999999);
-        sessionStorage.setItem(nameRoomId, roomId);
-        sessionStorage.setItem(count, 1)
-    }
+    if(location.search == "" && location.href + location.search == location.href){
+        if (!roomId) {
+            roomId = getRandomIntInclusive(100000, 999999);
+            sessionStorage.setItem(count, 1)
+        } else{
+            sessionStorage.setItem(count, 1)
+            if(sessionStorage.getItem(count) == '1'){
+                sessionStorage.setItem(count, 2)
+                Url = new URL(location.protocol + location.host + location.pathname);
+                Url.searchParams.append("id-room", roomId);
+                location.href = Url.href;
+                sessionStorage.removeItem(count)
+            }
+        }
 
-    if(sessionStorage.getItem(count) == '1'){
-        sessionStorage.setItem(count, 2)
-        Url = new URL(location.protocol + location.host + location.pathname);
-        Url.searchParams.append("id-room", roomId);
-        location.href = Url.href;
-        sessionStorage.removeItem(count)
+        if(sessionStorage.getItem(count) == '1'){
+            sessionStorage.setItem(count, 2)
+            Url = new URL(location.protocol + location.host + location.pathname);
+            Url.searchParams.append("id-room", roomId);
+            location.href = Url.href;
+            sessionStorage.removeItem(count)
+        }
+
+    } else{
+        roomId = location.search.split(`?${nameRoomId}=`)[1]
     }
+    sessionStorage.setItem(nameRoomId, roomId);
+
     document.cookie = encodeURIComponent("id-room") + '=' + encodeURIComponent(sessionStorage.getItem(nameRoomId));
     console.log(`%c ID-Room: ${sessionStorage.getItem('id-room')} `, 'background: #2B2C4B; color: #F72856; padding: 6px 12px; font-size: 64px; font-weight: bold; ');
 }
@@ -84,22 +99,22 @@ const createPlayer = () => {
     console.log(`%c Your ID: ${sessionStorage.getItem('playerId')} `, 'background: #2B2C4B; color: #F72856; padding: 6px 12px; font-size: 64px; font-weight: bold; ');
 }
 
-const getPlayers = (object) => {
-    console.log(object);
+// WebSocket communication
+const serverSend = () => {
+    wsServer.onopen = () => {
+        // Sending a message to the server
+        wsServer.send(JSON.stringify({playerId: sessionStorage.getItem('playerId'),roomId: sessionStorage.getItem("id-room")}));
+    };
 
-    let obj = create("div")
-    setClass(obj, `player playerId_${object.playerId}`)
-    select("#field").appendChild(obj) 
-}
-
-ws.onopen = () => console.log("hi!");
-ws.onmessage = response => {
-    if(typeof response.data == 'string'){
-        console.log(response.data);
-    } else{
-        getPlayers(response)
+    // Receiving messages from the server
+    wsServer.onmessage = event => {
+        console.log(event.data);
+    };
+    
+    wsServer.onclose = () => {
+        console.log("Connection with server is closed");
     }
-}  
+}
 
 // DOMContentLoaded
 document.addEventListener('DOMContentLoaded', event => {
