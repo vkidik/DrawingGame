@@ -101,9 +101,11 @@ const createPlayer = () => {
 
 // WebSocket communication
 const serverSend = () => {
+    let infoID = {playerId: sessionStorage.getItem('playerId'),roomId: sessionStorage.getItem("id-room")} 
     wsServer.onopen = () => {
         // Sending a message to the server
-        wsServer.send(JSON.stringify({playerId: sessionStorage.getItem('playerId'),roomId: sessionStorage.getItem("id-room")}));
+        console.log(infoID);
+        wsServer.send(JSON.stringify(infoID));
     };
 
     // Receiving messages from the server
