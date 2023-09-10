@@ -1,4 +1,8 @@
-// const { log } = require("console")
+
+// connecting to WebSocket
+const wsServer = new WebSocket(`ws://localhost:8080`)
+
+const styleLog = 'background: #2B2C4B; color: #F72856; padding: 6px 12px; font-size: 32px; font-weight: bold; '
 
 // select element in document
 const select = (obj) => document.querySelector(obj)
@@ -24,15 +28,12 @@ const setClass = (obj, classes) => obj.classList += classes
 // remove class of an object
 const removeClass = (obj, classes) => obj.classList.remove(classes)
 
-// connecting to WebSocket
-const wsServer = new WebSocket(`ws://localhost:8080`)
-
 // The maximum is inclusive and the minimum is inclusive
 const getRandomIntInclusive = (min, max) => {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1) + min);
-  }
+}
 
 // create scripts and styles tags in DOM
 const createScripts = () => {
@@ -47,6 +48,10 @@ const createScripts = () => {
     document.querySelector("#settingsApp").src = `assets/scripts/settingsApp.js?t=${timeStamp}`
 
     document.querySelector("#appJS").src = `assets/app/app.js?t=${timeStamp}`
+
+    createRoom()
+    createPlayer()
+    new settingsApp()
 }
 
 // Creating room id and put it in cookie
@@ -55,7 +60,7 @@ const createRoom = () => {
     const count = "count"
     let roomId = sessionStorage.getItem(nameRoomId);
 
-    if(location.search == "" && location.href + location.search == location.href){
+    if((location.search == "" && location.href + location.search == location.href) || location.search.split(`?${nameRoomId}=`)[1].split("").length != 6){
         if (!roomId) {
             roomId = getRandomIntInclusive(100000, 999999);
             sessionStorage.setItem(count, 1)
@@ -82,9 +87,10 @@ const createRoom = () => {
         roomId = location.search.split(`?${nameRoomId}=`)[1]
     }
     sessionStorage.setItem(nameRoomId, roomId);
-
+    
+    if(document.cookie.split("show-cookie=")[1] == undefined) document.cookie = encodeURIComponent("show-cookie") + "=" + encodeURIComponent("true")
     document.cookie = encodeURIComponent("id-room") + '=' + encodeURIComponent(sessionStorage.getItem(nameRoomId));
-    console.log(`%c ID-Room: ${sessionStorage.getItem('id-room')} `, 'background: #2B2C4B; color: #F72856; padding: 6px 12px; font-size: 64px; font-weight: bold; ');
+    console.log(`%c ID-Room: ${sessionStorage.getItem('id-room')} `, styleLog);
 }
 
 // Creating player id
@@ -93,24 +99,30 @@ const createPlayer = () => {
     let playerId = sessionStorage.getItem(namePlayerId)
 
     if(!playerId){
-        playerId = getRandomIntInclusive(100, 999)
+        playerId = getRandomIntInclusive(1000000, 9999999)
         sessionStorage.setItem(namePlayerId, playerId)
     }
-    console.log(`%c Your ID: ${sessionStorage.getItem('playerId')} `, 'background: #2B2C4B; color: #F72856; padding: 6px 12px; font-size: 64px; font-weight: bold; ');
+    console.log(`%c Your ID: ${sessionStorage.getItem('playerId')} `, styleLog);
+
+    serverSend()
 }
 
 // WebSocket communication
 const serverSend = () => {
-    let infoID = {playerId: sessionStorage.getItem('playerId'),roomId: sessionStorage.getItem("id-room")} 
+    let infoID = {playerId: Number(sessionStorage.getItem('playerId')),roomId: Number(sessionStorage.getItem("id-room"))}
     wsServer.onopen = () => {
         // Sending a message to the server
-        console.log(infoID);
-        wsServer.send(JSON.stringify(infoID));
+        wsServer.send(JSON.stringify(infoID)); 
     };
 
     // Receiving messages from the server
     wsServer.onmessage = event => {
-        console.log(event.data);
+        try{
+            const message = JSON.parse(event.data)
+            console.log(message);
+        } catch(error){
+            console.log(`%c ${event.data}`, styleLog)
+        }
     };
     
     wsServer.onclose = () => {
@@ -119,7 +131,4 @@ const serverSend = () => {
 }
 
 // DOMContentLoaded
-document.addEventListener('DOMContentLoaded', event => {
-    createScripts()
-    new settingsApp()
-})
+document.addEventListener('DOMContentLoaded', createScripts)

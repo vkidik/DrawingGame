@@ -20,7 +20,7 @@ Clone the DrawingGame repository to your local machine:
 
 bash
 Copy code
-git clone https://github.com/yourusername/DrawingGame.git
+git clone https://github.com/vkidik/DrawingGame.git
 Navigate to the project directory:
 
 Install the required Node.js dependencies:

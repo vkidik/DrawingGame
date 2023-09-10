@@ -10,11 +10,9 @@ class settingsApp{
         this.createBtn = select("#game > div.game > div.form > form.create > button")
         this.cookieBtn = select(".cookie .btn")
         // start Inner function for data input
-        createRoom()
         select(".id-room").innerHTML = `ID ROOM: ${sessionStorage.getItem("id-room")}`
         this.checkInputs()
         // creating an obj of player
-        createPlayer()
 
         this.namePlayerId = "playerId"
         this.playerId = sessionStorage.getItem(this.namePlayerId)
@@ -24,8 +22,6 @@ class settingsApp{
             sessionStorage.setItem(this.namePlayerId, this.playerId)
         }
         this.createPlayer(this.namePlayerId)
-
-        serverSend()
     }
     checkInputs(){
         // check input id_room
@@ -88,9 +84,14 @@ class settingsApp{
             location.href = Url.href;
         })
 
-        this.cookieBtn.addEventListener("click", ()=>{
+        if(document.cookie.split("show-cookie=")[1] == 'true'){
+            this.cookieBtn.addEventListener("click", ()=>{
+                select(".cookie").remove()
+                document.cookie = encodeURIComponent("show-cookie") + "=" + encodeURIComponent("false") 
+            })
+        } else{
             select(".cookie").remove()
-        })
+        }
     }
     createPlayer(namePlayerId){
         let player = create("div")
