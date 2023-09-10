@@ -6,7 +6,7 @@ let playerData = []
 let rooms = {}
 
 server.on('connection', wsClient => {
-    let unicueId = null;
+    let unicueId = 0;
     wsClient.send("Connection open");
 
     wsClient.on('message', message => {
@@ -28,24 +28,38 @@ server.on('connection', wsClient => {
             } else{
                 playerData.push(dataObject)
             }
+
             unicueId = dataObject.playerId
-            let roomId = `roomId_${dataObject.roomId}`
-            wsClient.send(roomId)
-            wsClient.send(JSON.stringify(dataObject))
-            wsClient.send(`Your unicueServerID: ${unicueId}`)
-            console.log(playerData);
+            
+            try{
+                const roomId = `roomId_${dataObject.roomId}`
+                if(typeof rooms[roomId] == 'undefined'){
+                    rooms[roomId] = []
+                }
+            } catch(error){
+                console.log("There is already such a room")
+            }
+
+            // let roomId = `roomId_${dataObject.roomId}`
+            // wsClient.send(roomId)
+            // wsClient.send(JSON.stringify(dataObject))
+            // wsClient.send(`Your unicueServerID: ${unicueId}`)
+            // console.log(playerData);
 
             
-            if(typeof rooms[roomId] == 'undefined'){
-                rooms[roomId] = []
-                rooms.roomId.push(unicueId)
-            } else{
-                rooms.roomId.push(unicueId)
-            }
-            console.log(JSON.stringify(rooms));
+            // if(typeof rooms[roomId] == 'undefined'){
+            //     rooms[roomId] = []
+            //     rooms.roomId.push(unicueId)
+            // } else{
+            //     rooms.roomId.push(unicueId)
+            // }
+            // console.log(JSON.stringify(rooms));
         } catch (error) {
             console.error('Invalid JSON:', message);
         }
+
+        console.log(playerData)
+        console.log(rooms)
     });
 
 
@@ -59,3 +73,4 @@ server.on('connection', wsClient => {
     // });
 });
 
+// сделать чтоб айди добалялся в румы и также сделать чтоб при закрытие удалялось из playerData и комнат
