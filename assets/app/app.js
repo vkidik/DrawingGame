@@ -1,6 +1,5 @@
-
 // connecting to WebSocket
-const wsServer = new WebSocket(`ws://localhost:8080`)
+const wsServer = new WebSocket(`ws://${location.hostname}:8080`)
 
 const styleLog = 'background: #2B2C4B; color: #F72856; padding: 6px 12px; font-size: 32px; font-weight: bold; '
 
