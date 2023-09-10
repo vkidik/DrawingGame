@@ -2,16 +2,26 @@ const WebSocket = require('ws')
 
 const server = new WebSocket.Server({ port: 8080 })
 
+const findArrayIndex = (array, element) => {
+    return array.findIndex(obj => {
+        if(JSON.stringify(obj) == JSON.stringify(element)){
+            return true
+        }
+    })
+}
+
 let playerData = []
 let rooms = {}
 
 server.on('connection', wsClient => {
     let unicueId = 0;
+    let dataObject
     wsClient.send("Connection open");
 
     wsClient.on('message', message => {
         try {
-            const dataObject = JSON.parse(message);
+            dataObject = JSON.parse(message);
+            unicueId = dataObject.playerId
 
             if(playerData.length != 0){
                 if(playerData.some(obj => {
@@ -28,41 +38,48 @@ server.on('connection', wsClient => {
             } else{
                 playerData.push(dataObject)
             }
-
-            unicueId = dataObject.playerId
-            
-            try{
-                const roomId = `roomId_${dataObject.roomId}`
-                if(typeof rooms[roomId] == 'undefined'){
-                    rooms[roomId] = []
-                }
-            } catch(error){
-                console.log("There is already such a room")
-            }
-
-            // let roomId = `roomId_${dataObject.roomId}`
-            // wsClient.send(roomId)
-            // wsClient.send(JSON.stringify(dataObject))
-            // wsClient.send(`Your unicueServerID: ${unicueId}`)
-            // console.log(playerData);
-
-            
-            // if(typeof rooms[roomId] == 'undefined'){
-            //     rooms[roomId] = []
-            //     rooms.roomId.push(unicueId)
-            // } else{
-            //     rooms.roomId.push(unicueId)
-            // }
-            // console.log(JSON.stringify(rooms));
         } catch (error) {
             console.error('Invalid JSON:', message);
         }
 
+        try{
+            const roomId = `roomId_${dataObject.roomId}`
+            if(typeof rooms[roomId] == 'undefined'){
+                rooms[roomId] = []
+            }
+        } catch(error){
+            console.log("There is already such a room")
+        }
+
+        try{
+            let idPlayer = findArrayIndex(rooms[`roomId_${dataObject.roomId}`], unicueId)
+
+            if(idPlayer != -1) {
+                rooms[`roomId_${dataObject.roomId}`].push(unicueId)
+            }
+        } catch(error){
+            console.log("error from adding id player")
+        }
+
+        wsClient.send(`Your unicueServerID: ${unicueId}`)
         console.log(playerData)
         console.log(rooms)
     });
 
+    wsClient.on('close', wsClient => {
+        try {
+            let dataId = findArrayIndex(playerData, dataObject)
+            playerData(dataId, 1)
 
+            let dataIdInRoom = findArrayIndex(rooms[`roomId_${dataObject.roomId}`], dataObject.playerId)
+            rooms[`roomId_${dataObject.roomId}`] = rooms[`roomId_${dataObject.roomId}`].splice(dataIdInRoom, 1)
+        } catch(error){
+            console.log("error of deleting")
+        }
+
+        console.log(playerData);
+        console.log(rooms);
+    })
     // Отправка списка клиентов всем подключенным клиентам
     // server.clients.forEach(client => {
     //     if (client !== wsClient && client.readyState === WebSocket.OPEN) {
