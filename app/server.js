@@ -47,29 +47,32 @@ server.on('connection', wsClient => {
             if(typeof rooms[roomId] == 'undefined'){
                 rooms[roomId] = []
             }
-        } catch(error){
-            console.log("There is already such a room")
-        }
 
-        try{
-            let idPlayer = findArrayIndex(rooms[`roomId_${dataObject.roomId}`], unicueId)
-
-            if(idPlayer != -1) {
-                rooms[`roomId_${dataObject.roomId}`].push(unicueId)
+            try{
+                let idPlayer = findArrayIndex(rooms[`roomId_${dataObject.roomId}`], unicueId)
+    
+                if(idPlayer == -1) {
+                    rooms[`roomId_${dataObject.roomId}`].push(unicueId)
+                }
+            } catch(error){
+                console.log("error from adding id player")
             }
         } catch(error){
-            console.log("error from adding id player")
+            console.log("There is already such a room")
         }
 
         wsClient.send(`Your unicueServerID: ${unicueId}`)
         console.log(playerData)
         console.log(rooms)
+
+        wsClient["id"] = unicueId
+        console.log(wsClient["id"]);
     });
 
-    wsClient.on('close', wsClient => {
+    wsClient.on('close', () => {
         try {
             let dataId = findArrayIndex(playerData, dataObject)
-            playerData(dataId, 1)
+            playerData.splice(dataId, 1)
 
             let dataIdInRoom = findArrayIndex(rooms[`roomId_${dataObject.roomId}`], dataObject.playerId)
             rooms[`roomId_${dataObject.roomId}`] = rooms[`roomId_${dataObject.roomId}`].splice(dataIdInRoom, 1)
@@ -80,14 +83,18 @@ server.on('connection', wsClient => {
         console.log(playerData);
         console.log(rooms);
     })
+
+
     // Отправка списка клиентов всем подключенным клиентам
-    // server.clients.forEach(client => {
-    //     if (client !== wsClient && client.readyState === WebSocket.OPEN) {
-    //         // console.log(client);
-    //         wsClient.send(JSON.stringify(client))
-    //         wsClient.send("New client connected");
-    //     }
-    // });
+    server.clients.forEach(client => {
+        if (client !== wsClient && client.readyState === WebSocket.OPEN) {
+            let roomId = [`roomId_${dataObject.roomId}`]
+
+            if(rooms[roomId].length != 0){
+                
+            }
+        }
+    });
 });
 
 // сделать чтоб айди добалялся в румы и также сделать чтоб при закрытие удалялось из playerData и комнат

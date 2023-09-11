@@ -207,6 +207,7 @@ body,
   width: 1000px;
   background-color: var(--color-field);
   position: relative;
+  z-index: 1;
 }
 
 .player {
@@ -218,6 +219,7 @@ body,
   background-color: var(--color-default);
   display: flex;
   justify-content: center;
+  z-index: 2;
 }
 
 .player .name-player {
@@ -228,6 +230,7 @@ body,
   padding-top: 6px;
   padding-right: 6px;
   background-color: var(--color-body);
+  z-index: 3;
 }
 
 /* COOKIE */
