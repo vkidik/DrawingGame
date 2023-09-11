@@ -10,13 +10,55 @@ const findArrayIndex = (array, element) => {
     })
 }
 
+const findArrayCount = (array, target) => {
+    let count = 0
+    for(element of array){
+        if(element == target){
+            count++
+        }
+    }
+    return count
+}
+
+const serverClients = (server, data) => {
+    server.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            let roomId = [`roomId_${data.roomId}`]
+
+            rooms[roomId].playersId.forEach(playerID => {
+                if(playerID == client.id){
+                    if(rooms[roomId].serversID.length == 0){
+                        rooms[roomId].serversID.push(client)
+                    } else{
+                        rooms[roomId].serversID.forEach(serverPlayer => {
+                            if(serverPlayer != client){
+                                rooms[roomId].serversID.push(client)
+                            }
+                        });
+                    }
+                }
+            });
+
+            if(rooms[roomId].playersId.length > 1){
+                rooms[roomId].serversID.forEach(player => {
+                    player.send(`Hi by ${player.id}`)
+                });
+            }
+        }
+    });
+    console.log(playerData)
+    console.log(rooms)
+}
+
 let playerData = []
 let rooms = {}
 
 server.on('connection', wsClient => {
+    console.clear()
     let unicueId = 0;
     let dataObject
     wsClient.send("Connection open");
+
 
     wsClient.on('message', message => {
         try {
@@ -45,14 +87,17 @@ server.on('connection', wsClient => {
         try{
             const roomId = `roomId_${dataObject.roomId}`
             if(typeof rooms[roomId] == 'undefined'){
-                rooms[roomId] = []
+                rooms[roomId] = {
+                    playersId : [],
+                    serversID : []
+                }
             }
 
             try{
-                let idPlayer = findArrayIndex(rooms[`roomId_${dataObject.roomId}`], unicueId)
+                let idPlayer = findArrayIndex(rooms[`roomId_${dataObject.roomId}`].playersId, unicueId)
     
                 if(idPlayer == -1) {
-                    rooms[`roomId_${dataObject.roomId}`].push(unicueId)
+                    rooms[`roomId_${dataObject.roomId}`].playersId.push(unicueId)
                 }
             } catch(error){
                 console.log("error from adding id player")
@@ -62,11 +107,9 @@ server.on('connection', wsClient => {
         }
 
         wsClient.send(`Your unicueServerID: ${unicueId}`)
-        console.log(playerData)
-        console.log(rooms)
 
         wsClient["id"] = unicueId
-        console.log(wsClient["id"]);
+        serverClients(server, dataObject)
     });
 
     wsClient.on('close', () => {
@@ -74,27 +117,19 @@ server.on('connection', wsClient => {
             let dataId = findArrayIndex(playerData, dataObject)
             playerData.splice(dataId, 1)
 
-            let dataIdInRoom = findArrayIndex(rooms[`roomId_${dataObject.roomId}`], dataObject.playerId)
-            rooms[`roomId_${dataObject.roomId}`] = rooms[`roomId_${dataObject.roomId}`].splice(dataIdInRoom, 1)
+            let dataIdInRoom = findArrayIndex(rooms[`roomId_${dataObject.roomId}`].playersId, dataObject.playerId)
+            rooms[`roomId_${dataObject.roomId}`].playersId = rooms[`roomId_${dataObject.roomId}`].playersId.splice(dataIdInRoom, 1)
         } catch(error){
             console.log("error of deleting")
         }
-
+        console.clear()
         console.log(playerData);
         console.log(rooms);
     })
 
 
     // Отправка списка клиентов всем подключенным клиентам
-    server.clients.forEach(client => {
-        if (client !== wsClient && client.readyState === WebSocket.OPEN) {
-            let roomId = [`roomId_${dataObject.roomId}`]
-
-            if(rooms[roomId].length != 0){
-                
-            }
-        }
-    });
+    
 });
 
-// сделать чтоб айди добалялся в румы и также сделать чтоб при закрытие удалялось из playerData и комнат
+// удалить клиента с rooms.room_NUM.serversId
