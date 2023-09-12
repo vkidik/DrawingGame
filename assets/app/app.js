@@ -34,6 +34,16 @@ const getRandomIntInclusive = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
+const findArrayCount = (array, target) => {
+    let count = 0
+    for(element of array){
+        if(element == target){
+            count++
+        }
+    }
+    return count
+}
+
 // create scripts and styles tags in DOM
 const createScripts = () => {
     // getting time for linkinking scripts and styles

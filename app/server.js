@@ -10,16 +10,6 @@ const findArrayIndex = (array, element) => {
     })
 }
 
-const findArrayCount = (array, target) => {
-    let count = 0
-    for(element of array){
-        if(element == target){
-            count++
-        }
-    }
-    return count
-}
-
 const serverClients = (server, data) => {
     server.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
@@ -27,27 +17,15 @@ const serverClients = (server, data) => {
 
             rooms[roomId].playersId.forEach(playerID => {
                 if(playerID == client.id){
-                    if(rooms[roomId].serversID.length == 0){
+                    if(rooms[roomId].playersId.length == rooms[roomId].serversID.length + 1){
                         rooms[roomId].serversID.push(client)
-                    } else{
-                        rooms[roomId].serversID.forEach(serverPlayer => {
-                            if(serverPlayer != client){
-                                rooms[roomId].serversID.push(client)
-                            }
-                        });
                     }
                 }
             });
-
-            if(rooms[roomId].playersId.length > 1){
-                rooms[roomId].serversID.forEach(player => {
-                    player.send(`Hi by ${player.id}`)
-                });
-            }
         }
     });
+
     console.log(playerData)
-    console.log(rooms)
 }
 
 let playerData = []
@@ -58,7 +36,6 @@ server.on('connection', wsClient => {
     let unicueId = 0;
     let dataObject
     wsClient.send("Connection open");
-
 
     wsClient.on('message', message => {
         try {
@@ -73,7 +50,7 @@ server.on('connection', wsClient => {
                         return false
                     }
                 }) == true){
-                    console.log("There is already such a user!");
+                    console.error("There is already such a user!");
                 } else{
                     playerData.push(dataObject)
                 }
@@ -82,6 +59,7 @@ server.on('connection', wsClient => {
             }
         } catch (error) {
             console.error('Invalid JSON:', message);
+            console.log(JSON.stringify(message))
         }
 
         try{
@@ -103,33 +81,42 @@ server.on('connection', wsClient => {
                 console.log("error from adding id player")
             }
         } catch(error){
-            console.log("There is already such a room")
+            console.error("There is already such a room")
         }
 
         wsClient.send(`Your unicueServerID: ${unicueId}`)
 
         wsClient["id"] = unicueId
         serverClients(server, dataObject)
+
+        if(rooms[`roomId_${dataObject.roomId}`].playersId.length >= 2){
+            rooms[`roomId_${dataObject.roomId}`].serversID.forEach(player => {
+                if(player.id != wsClient.id){
+                    player.send(`Hi by ${player.id}`)
+                }
+            });
+            console.log(rooms);
+        }
     });
 
     wsClient.on('close', () => {
         try {
             let dataId = findArrayIndex(playerData, dataObject)
-            playerData.splice(dataId, 1)
+            playerData = playerData.splice(dataId, 1)
 
             let dataIdInRoom = findArrayIndex(rooms[`roomId_${dataObject.roomId}`].playersId, dataObject.playerId)
-            rooms[`roomId_${dataObject.roomId}`].playersId = rooms[`roomId_${dataObject.roomId}`].playersId.splice(dataIdInRoom, 1)
+            rooms[`roomId_${dataObject.roomId}`].playersId.splice(dataIdInRoom, 1)
+            rooms[`roomId_${dataObject.roomId}`].serversID.splice(rooms[`roomId_${dataObject.roomId}`].serversID[dataIdInRoom], 1) 
+            
         } catch(error){
-            console.log("error of deleting")
+            console.error("error of deleting")
         }
+
+        if(rooms[`roomId_${dataObject.roomId}`].playersId.length == 0){
+            delete rooms[`roomId_${dataObject.roomId}`]
+        }
+
         console.clear()
         console.log(playerData);
-        console.log(rooms);
     })
-
-
-    // Отправка списка клиентов всем подключенным клиентам
-    
 });
-
-// удалить клиента с rooms.room_NUM.serversId
