@@ -1,7 +1,10 @@
 const WebSocket = require('ws')
-
 const server = new WebSocket.Server({ port: 8080 })
 
+let playerData = []
+let rooms = {}
+
+// function for another class
 const findArrayIndex = (array, element) => {
     return array.findIndex(obj => {
         if(JSON.stringify(obj) == JSON.stringify(element)){
@@ -10,113 +13,113 @@ const findArrayIndex = (array, element) => {
     })
 }
 
-const serverClients = (server, data) => {
-    server.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            let roomId = [`roomId_${data.roomId}`]
-
-            rooms[roomId].playersId.forEach(playerID => {
-                if(playerID == client.id){
-                    if(rooms[roomId].playersId.length == rooms[roomId].serversID.length + 1){
-                        rooms[roomId].serversID.push(client)
-                    }
-                }
-            });
-        }
-    });
-
-    console.log(playerData)
-}
-
-let playerData = []
-let rooms = {}
-
 server.on('connection', wsClient => {
-    console.clear()
-    let unicueId = 0;
-    let dataObject
-    wsClient.send("Connection open");
+    new serverWsClient(wsClient)
+})
 
-    wsClient.on('message', message => {
-        try {
-            dataObject = JSON.parse(message);
-            unicueId = dataObject.playerId
+class serverWsClient{
+    constructor(wsClient){
+        console.clear()
+        this.dataObject
+        this.unicueId
+        this.wsClient = wsClient
 
-            if(playerData.length != 0){
-                if(playerData.some(obj => {
-                    if(JSON.stringify(obj) == JSON.stringify(dataObject)){
-                        return true
-                    } else{
-                        return false
-                    }
-                }) == true){
-                    console.error("There is already such a user!");
-                } else{
-                    playerData.push(dataObject)
-                }
-            } else{
-                playerData.push(dataObject)
+        wsClient.on('message', message => {
+            try {
+                this.dataObject = JSON.parse(message)
+                this.unicueId = this.dataObject.playerId
+            } catch (error) {
+                console.error(`Invalid JSON: ${message}`)
             }
-        } catch (error) {
-            console.error('Invalid JSON:', message);
-            console.log(JSON.stringify(message))
-        }
+            
+            this.getMessage(this.dataObject, wsClient)
+        })
 
-        try{
-            const roomId = `roomId_${dataObject.roomId}`
+        wsClient.on('close', () => {this.onDisconnectPlayer(this.dataObject)})
+    
+        
+    }
+
+    getMessage(dataObject, wsClient){
+        this.createServerPlayer(dataObject)
+        wsClient["id"] = this.unicueId
+        wsClient.send(`Your unicueServerID: ${this.unicueId}`)
+    }
+    
+    createServerPlayer(dataObject){
+        if(playerData.some(obj => {
+            if(JSON.stringify(obj) == JSON.stringify(dataObject)){
+                return true
+            } else{
+                return false
+            }
+        }) == true){
+            console.error("There is already such a user!");
+            console.log(playerData)
+            console.log(rooms)
+        } else{
+            playerData.push(dataObject)
+
+            this.createServerRoom(dataObject)
+        }
+    }
+
+    createServerRoom(dataObject){
+        const roomId = `roomId_${dataObject.roomId}`
+
+        try {
             if(typeof rooms[roomId] == 'undefined'){
                 rooms[roomId] = {
                     playersId : [],
                     serversID : []
                 }
             }
-
-            try{
-                let idPlayer = findArrayIndex(rooms[`roomId_${dataObject.roomId}`].playersId, unicueId)
-    
-                if(idPlayer == -1) {
-                    rooms[`roomId_${dataObject.roomId}`].playersId.push(unicueId)
-                }
-            } catch(error){
-                console.log("error from adding id player")
-            }
-        } catch(error){
+        } catch (error) {
             console.error("There is already such a room")
         }
+        
+        this.createServerClients(roomId)
+    }
 
-        wsClient.send(`Your unicueServerID: ${unicueId}`)
+    createServerClients(room){
+        let idPlayer = findArrayIndex(rooms[room].playersId, this.unicueId)
 
-        wsClient["id"] = unicueId
-        serverClients(server, dataObject)
+        if(idPlayer == -1){
+            rooms[room].playersId.push(this.unicueId)
+            if(rooms[room].playersId.length == rooms[room].serversID.length + 1){
+                rooms[room].serversID.push(this.wsClient)
+            }
+        }
 
-        if(rooms[`roomId_${dataObject.roomId}`].playersId.length >= 2){
-            rooms[`roomId_${dataObject.roomId}`].serversID.forEach(player => {
-                if(player.id != wsClient.id){
-                    player.send(`Hi by ${player.id}`)
-                }
+        console.log(playerData);
+        this.chatWithPlayers(room)
+    }
+
+    chatWithPlayers(room){
+        console.log(rooms);
+        if(rooms[room].playersId >= 2){
+            rooms[room].serversID.forEach(client => {
+                client.send(`Messages by ${this.unicueId}`)
             });
-            console.log(rooms);
         }
-    });
+    }
 
-    wsClient.on('close', () => {
-        try {
-            let dataId = findArrayIndex(playerData, dataObject)
-            playerData = playerData.splice(dataId, 1)
+    onDisconnectPlayer(dataObject){
+        const room = `roomId_${dataObject.roomId}`
 
-            let dataIdInRoom = findArrayIndex(rooms[`roomId_${dataObject.roomId}`].playersId, dataObject.playerId)
-            rooms[`roomId_${dataObject.roomId}`].playersId.splice(dataIdInRoom, 1)
-            rooms[`roomId_${dataObject.roomId}`].serversID.splice(rooms[`roomId_${dataObject.roomId}`].serversID[dataIdInRoom], 1) 
-            
-        } catch(error){
-            console.error("error of deleting")
-        }
+        let dataIndex = findArrayIndex(playerData, dataObject)
+        playerData = playerData.splice(dataIndex, 1)
 
-        if(rooms[`roomId_${dataObject.roomId}`].playersId.length == 0){
-            delete rooms[`roomId_${dataObject.roomId}`]
+        let dataIdInRoom = findArrayIndex(rooms[room].playersId, this.unicueId)
+        rooms[room].playersId = rooms[room].playersId.splice(dataIdInRoom, 1)
+        rooms[room].serversID = rooms[room].serversID.splice(dataIdInRoom, 1)
+
+        if(rooms[room].playersId.length == 0){
+            delete rooms[room]
         }
 
         console.clear()
         console.log(playerData);
-    })
-});
+        console.log(rooms)
+    }
+}
